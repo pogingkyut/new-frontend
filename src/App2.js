@@ -1,67 +1,66 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 function App() {
-  const url = "http://127.0.0.1:8000/lists/";
+  const url = "http://127.0.0.1:8000/";
   const [lists, setLists] = useState([]);
   const [task, setTask] = useState("");
-  const [refresh, setRefresh] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    axios.get(url).then((res) => {
-      setLists(res.data);
-      setLoading(false);
-    });
-  }, [refresh]);
+  const getlists = () => {
+    fetch(url + "lists/")
+      .then((res) => res.json())
+      .then((data) => setLists(data))
+      .catch((e) => console.log(e.Error));
+  };
 
-  const listAdd = (e) => {
+  useEffect(getlists, []);
+
+  const listadd = (e) => {
     e.preventDefault();
-    axios
-      .post(url + "add/", {
-        task,
-      })
-      .then(() => {
-        setTask("");
-        setLoading(true);
-        setRefresh(!refresh);
-      });
-  };
-  const listUpdate = (list, id) => {
-    axios
-      .put(url + "update/" + id + "/", {
-        ...list,
-        complete: !list.complete,
-      })
-      .then(() => {
-        setLoading(true);
-        setRefresh(!refresh);
-      });
-  };
-  const listDelete = (id) => {
-    axios.delete(url + "delete/" + id + "/").then(() => {
-      setRefresh(!refresh);
-      setLoading(true);
-    });
+    fetch(url + "lists/add/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: task,
+      }),
+    }).then((res) => res.json());
+    setTask("");
+    getlists();
   };
 
-  return loading ? (
-    <p>Loading...</p>
-  ) : (
+  const listupdate = (list, id) => {
+    fetch("http://127.0.0.1:8000/lists/update/" + id + "/", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: list.task,
+        complete: !list.complete,
+      }),
+    }).then((res) => res.json());
+
+    getlists();
+    getlists();
+  };
+
+  const listdelete = (id) => {
+    fetch(url + "lists/delete/" + id + "/", {
+      method: "DELETE",
+    });
+    getlists();
+    getlists();
+  };
+
+  return (
     <div className="App container mx-auto">
       <div className="card mt-2 mx-auto" style={{ width: "30rem" }}>
         <div className="card-header">
           <h1 className="mx-auto text-center">TODO APP</h1>
         </div>
         <div className="card-body">
-          <form className="form-control" onSubmit={(e) => listAdd(e)}>
+          <form className="form-control" onSubmit={(e) => listadd(e)}>
             <input
               type="text"
-              autoFocus
               className="form-control mb-3"
               placeholder="Task"
-              value={task}
               onChange={(e) => setTask(e.target.value)}
             />
             <button className="btn btn-primary form-control">Submit</button>
@@ -78,21 +77,20 @@ function App() {
                   <h4
                     style={{
                       textDecoration: list.complete ? "line-through" : "none",
-                      width: "300px",
                     }}
                   >
                     {list.task}
                   </h4>
-                  <div style={{ width: "120px" }}>
+                  <div>
                     <button
                       className="btn btn-primary me-1"
-                      onClick={() => listUpdate(list, list.id)}
+                      onClick={() => listupdate(list, list.id)}
                     >
                       update
                     </button>
                     <button
                       className="btn btn-danger"
-                      onClick={() => listDelete(list.id)}
+                      onClick={() => listdelete(list.id)}
                     >
                       x
                     </button>
